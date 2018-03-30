@@ -1,0 +1,70 @@
+﻿The only bugs included are ones that group members were unable to resolve in the same coding session. As a result, this list includes small architectural issues but not typos that caused a compilation failure.
+
+
+FORMAT:
+Checkpoint:
+1. Who found it: Bug description
+   1. Who resolved it: Resolution
+
+
+Checkpoint 1:
+
+
+1. All: Starting the OS sometimes fails; it was failing to boot on the lab computers but not Mark’s laptop.  A full rebuild caused it to fail on Mark’s laptop.  A revert to the last working commit did NOT fix it.
+   1. Mark: Debug.sh was not getting run as part of the makefile due to permissions issues.  A TA said that it didn’t matter but he was incorrect.  Marking debug.sh executable fixed the issue.
+1. Mark: Page directory entries showing up in memory in reverse bit order
+   1. Ray: Packed values with specified bit lengths are placed in order LSB (top) to MSB (bottom)
+
+
+Checkpoint 2:
+1. Victor: Keyboard scancodes for similar keys did not register properly
+   1. Victor: Double check all scancodes and made sure to take into account the scan code for released keys
+1. Ray: Kernel freezes after single keyboard interrupt.
+   1. Ray: Needed to use iret instead of ret in wrapper
+1. Victor: RTC read and handler were faulty and did not execute on every interrupt
+   1. Ray: Needed to send EOI and needed a while loop to check if interrupt flag was raised
+1. Demo TA: “ls” functionality implemented as a test, should be directory_read()
+   1. Mark: Moved ls to directory_read() in fs.c
+
+
+Checkpoint 3: 
+1. Ray: Page faults after repeated executions of programs
+   1. Ray: Tss.esp0 not properly set
+1. Mark: Page fault on context switch, happens inside of asm volatile() call in execute
+   1. Mark: Incorrect data segment indices used; changed to constants declared in x86_desc.h
+1. Lab TA/Ray: Read_data did not return the number of bytes, only 0 or -1, causing syscall read to fail
+   1. Mark: Read_data was updated to return the number of bytes read
+1. Ray: Pagefault if a program reads the stack right after an execute syscall
+   1. Ray: Execute syscall moves user program stack to the word with the highest address in the user page (4 addresses above where it was)
+1. Mark: FS tests would fail on boot with a page fault
+   1. Mark: no PCB was setup during testing for FS tests.  Created a fake PCB using portions of the execute() code and removed it after.
+1. Mark: “ls” would produce random, trailing characters after the end of “verylargetextwithverylongname.txt”
+   1. Mark: terminal_write() wrote to display until a ‘\0’ and did not take the “nbytes” parameter into account.  Fixed
+1. Ray: Cat only printed first few characters of a file
+   1. Mark: Needed to allow writing for null characters to reach end of file; removed printf with putc
+
+
+Checkpoint 4: 
+1. Ray: Getargs not receiving arguments correctly
+   1. Ray: Parsed command into single string instead of array of strings
+1. Ray: Fish page faulting
+   1. Ray: Forgot to flush_tlb / reloadcr3 when remapping video address in vidmap
+
+
+Checkpoint 5: 
+1. All: Only 1 Pit interrupt occurs and freezes the entire kernel
+   1. Victor: send_eoi(PIT_IRQ) was missing
+1. Ray: Spamming enter in different terminals when not in shell leaks into other shells
+   1. Ray: Pit interrupt was occurring between num_enters and exec_term_id check; added cli() to both checks
+1. Ray: Very rare pagefaults on program start/stop likely due to a missing cli
+   1. Ray: cli() was not called in execute syscall before updating esp0 and ss0 in tss
+1. Ray: Page faulting at terminal switch
+   1. Ray: Esp0 not set in terminal switch
+1. Ray: Fish and cursor not showing on second and third terminal
+   1. Ray: Need to initialize nondisplay buffers with attribute 0x7
+1. Ray: Only one process can use an RTC interrupt, leading to lags in fish and pingpong
+   1. Ray: Add 3 flags for the 3 terminals. RTC interrupt sets all flags to 1
+1. Ray: nested shells not working with scheduling enabled
+   1. Ray: ESP0 was not set in scheduler
+1. Ray: switching terminals always restarts shell instead of continuing current execution
+   1. Ray: Only execute the shell if it’s the first time switching
